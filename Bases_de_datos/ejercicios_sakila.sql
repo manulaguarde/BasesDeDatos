@@ -119,9 +119,45 @@ select * from store;
 
 -- 6) Ventas totales por categoría ordenadas
 
+SELECT
+	c.name as name_category, sum(payment.amount) as total_amount
+FROM	
+	category c
+		JOIN
+	film_category USING (category_id)
+		JOIN
+	film USING (film_id)
+		JOIN
+	inventory USING (film_id)
+		JOIN
+	rental USING (inventory_id)
+		JOIN
+	payment USING (rental_id)
+GROUP BY c.name
+ORDER BY total_amount ASC;
+	
 
+select * from category limit 5;
 
 -- 7) Actores con al menos diez películas de categorías distintas
+
+SELECT
+	a.actor_id,
+	a.first_name AS name, 
+    a.last_name AS last_name,
+    COUNT(DISTINCT fc.category_id) AS different_categories
+FROM actor a
+		JOIN
+	film_actor USING (actor_id)
+		JOIN
+	film USING (film_id)
+		JOIN
+	film_category fc USING (film_id)
+GROUP BY a.actor_id
+HAVING different_categories >= 10
+ORDER BY actor_id ASC;
+    
+
 -- 8) Tiendas con más stock disponible
 -- 9) Diez películas con mayor diferencia entre coste de reposición y tarifa de alquiler
 -- 10) Películas con más de tres actores y duración menor a 90 minutos
