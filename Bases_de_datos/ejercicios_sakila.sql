@@ -133,9 +133,31 @@ FROM
 	rental USING (inventory_id)
 		JOIN
 	payment USING (rental_id)
-GROUP BY c.name
+-- GROUP BY c.name
+GROUP BY c.category_id
 ORDER BY total_amount ASC;
+
+-- es una buena practica agrupar por id (o columnas que esten mejor ordenadas) porque el proceso es mas rapido, mas eficiente.
 	
+ -- Si me pide ventas totales primero conviene empezar por payment y no al reves   
+ 
+SELECT
+	c.name as name_category, sum(payment.amount) as total_amount
+FROM	
+	payment
+		JOIN
+	rental USING (rental_id)
+		JOIN
+	inventory USING (inventory_id)
+		JOIN
+	film USING (film_id)
+		JOIN
+	film_category USING (film_id)
+		JOIN
+	category c USING (category_id)
+-- GROUP BY c.name
+GROUP BY c.category_id
+ORDER BY total_amount ASC;
 
 select * from category limit 5;
 
@@ -143,6 +165,20 @@ select * from category limit 5;
 
 SELECT
 	a.actor_id,
+	concat (a.first_name, ' ', a.last_name) AS full_name, -- queda mejor concatenado, osea sumando las dos columnas
+    COUNT(DISTINCT fc.category_id) AS total_different_categories
+FROM actor a
+		JOIN
+	film_actor USING (actor_id)
+		JOIN
+	film USING (film_id)
+		JOIN
+	film_category fc USING (film_id)
+GROUP BY a.actor_id
+HAVING total_different_categories >= 10
+ORDER BY actor_id ASC;
+
+SELECT
 	a.first_name AS name, 
     a.last_name AS last_name,
     COUNT(DISTINCT fc.category_id) AS different_categories
@@ -154,11 +190,70 @@ FROM actor a
 		JOIN
 	film_category fc USING (film_id)
 GROUP BY a.actor_id
-HAVING different_categories >= 10
-ORDER BY actor_id ASC;
-    
+HAVING COUNT(DISTINCT fc.category_id) >= 10
+ORDER BY different_categories ASC;
 
+-- Vamos a hacer esta consulta con un WHERE en lugar de con un HAVING
+-- Es un adelanto de una tarea posterior
+-- Hacer consulta sobre consulta (subconsultas
+  
+ -- Distribucion de numero de actores por numero de categorias distintas en las que trabajan 
+SELECT subconsulta.total_different_categories, COUNT(actor_id) AS num_actors
+FROM (
+			SELECT
+				a.actor_id,
+				concat (a.first_name, ' ', a.last_name) AS full_name,
+				COUNT(DISTINCT fc.category_id) AS total_different_categories
+			FROM actor a
+					JOIN
+				film_actor USING (actor_id)
+					JOIN
+				film USING (film_id)
+					JOIN
+				film_category fc USING (film_id)
+			GROUP BY a.actor_id
+            ) AS subconsulta
+WHERE subconsulta.total_different_categories >= 10
+GROUP BY subconsulta.total_different_categories
+ORDER BY subconsulta.total_different_categories DESC;
+    
 -- 8) Tiendas con más stock disponible
+-- Esta consulta requiere que uses una funcion : inventory_in_stock
+
+SELECT store.store_id AS tienda,
+	COUNT(inventory.inventory_id) AS inventario_disponible
+    -- inventory.inventory_id
+FROM store
+		JOIN 
+	inventory USING (store_id)
+		-- JOIN
+	-- rental USING (inventory_id)
+WHERE inventory_in_stock(inventory_id)
+GROUP BY store.store_id;
+-- HAVING inventory_in_stock(inventory_id);
+
+
 -- 9) Diez películas con mayor diferencia entre coste de reposición y tarifa de alquiler
+
+SELECT * from film limit 10;
+
+SELECT 
+	f.film_id, f.title AS titulo, (f.replacement_cost - f.rental_rate) AS diferencia_de_coste
+FROM
+	film f
+ORDER BY diferencia_de_coste DESC 
+LIMIT 10;
+    
+    
+    
+		-- JOIN
+	-- inventory i USING (film_id)
+		-- JOIN	Bases_de_datos/ejercicios_sakila.sql
+
+    -- rental r USING (inventory_id)
+		-- JOIN
+    -- payment p USING (rental_id)
+
+
 -- 10) Películas con más de tres actores y duración menor a 90 minutos
 -- 11) Cliente que más ha gastado
