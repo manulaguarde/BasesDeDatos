@@ -392,6 +392,80 @@ FROM
     rental USING (inventory_id)
 GROUP BY store.store_id;
 
+-- 31:  Para cada actor, cuenta cuántas películas tiene y muestra solo los que superan 15 películas.
+
+SELECT 
+    actor.actor_id AS actor_id,
+    CONCAT(actor.first_name, ' ', actor.last_name) AS nombre_actor,
+    COUNT(fa.film_id) AS total_peliculas
+FROM
+    actor
+        JOIN
+    film_actor fa USING (actor_id)
+GROUP BY actor.actor_id , CONCAT(actor.first_name, ' ', actor.last_name)
+HAVING COUNT(fa.film_id) > 15;
+
+-- 32:  Para cada categoría (por nombre), cuenta cuántas películas hay en esa categoría.
+
+SELECT 
+    ca.category_id AS categoria_id,
+    ca.name AS categoria,
+    COUNT(fc.film_id) AS total_peliculas
+FROM
+    category ca
+        JOIN
+    film_category fc USING (category_id)
+GROUP BY ca.category_id , ca.name;
+
+-- 33:  Para cada película, cuenta cuántos alquileres se han hecho de sus copias.
+
+SELECT 
+    film.film_id AS pelicula_id,
+    film.title AS titulo,
+    COUNT(rental.rental_id) AS total_alquileres
+FROM
+    film
+        JOIN
+    inventory USING (film_id)
+        JOIN
+    rental USING (inventory_id)
+GROUP BY film.film_id , film.title;
+
+-- 34:  Para cada cliente, suma el importe pagado en 2005 y filtra clientes con total >= 150.
+
+SELECT 
+    cu.customer_id AS cliente_id,
+    CONCAT(cu.first_name, ' ', cu.last_name) AS nombre_cliente,
+    SUM(pa.amount) AS importe_total
+FROM
+    customer cu
+        JOIN
+    payment pa ON cu.customer_id = pa.customer_id
+        AND YEAR(payment_date) = '2005'
+GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name)
+HAVING SUM(pa.amount) >= 150;
+
+-- 35:  Para cada tienda, suma el importe cobrado por todos sus empleados.
+
+SELECT 
+    store.store_id AS tienda, SUM(pa.amount) AS total_cobrado
+FROM
+    store
+        JOIN
+    staff USING (store_id)
+        JOIN
+    payment pa USING (staff_id)
+GROUP BY store.store_id;
+
+-- 36:  Para cada ciudad, cuenta cuántos empleados residen ahí (staff -> address -> city).
+
+select city.city_id as ciudad_id,
+city.city as ciudad,
+count(staff.staff_id) as num_empleados
+from city
+join address using (city_id)
+join staff using (address_id)
+group by city.city_id, city.city;
 
 
 
