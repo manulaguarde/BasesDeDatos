@@ -459,13 +459,230 @@ GROUP BY store.store_id;
 
 -- 36:  Para cada ciudad, cuenta cuántos empleados residen ahí (staff -> address -> city).
 
-select city.city_id as ciudad_id,
-city.city as ciudad,
-count(staff.staff_id) as num_empleados
-from city
-join address using (city_id)
-join staff using (address_id)
-group by city.city_id, city.city;
+SELECT 
+    city.city_id AS ciudad_id,
+    city.city AS ciudad,
+    COUNT(staff.staff_id) AS num_empleados
+FROM
+    city
+        JOIN
+    address USING (city_id)
+        JOIN
+    staff USING (address_id)
+GROUP BY city.city_id , city.city;
+
+use sakila;
+
+-- 37:  Para cada ciudad, cuenta cuántas tiendas existen (store -> address -> city).
+
+SELECT 
+    city.city_id AS ciudad_id,
+    city.city AS ciudad,
+    COUNT(store.store_id) AS total_tiendas
+FROM
+    city
+        JOIN
+    address USING (city_id)
+        JOIN
+    store USING (address_id)
+GROUP BY city.city_id , city.city;
+
+-- 38:  Para cada actor, calcula la duración media de sus películas del año 2006.
+
+SELECT 
+    actor.actor_id AS actor_id,
+    CONCAT(actor.first_name, ' ', actor.last_name) AS nombre_actor,
+    AVG(film.length) AS duracion_media
+FROM
+    actor
+        JOIN
+    film_actor USING (actor_id)
+        JOIN
+    film USING (film_id)
+WHERE
+    release_year = '2006'
+GROUP BY actor.actor_id , CONCAT(actor.first_name, ' ', actor.last_name);
+
+select * from film limit 5;
+
+-- 39:  Para cada categoría, calcula la duración media y muestra solo las que superan 120.
+
+SELECT 
+    ca.category_id AS categoria_id,
+    ca.name AS nombre_categoria,
+    AVG(film.length) AS duracion_media
+FROM
+    category ca
+        JOIN
+    film_category USING (category_id)
+        JOIN
+    film USING (film_id)
+GROUP BY ca.category_id , ca.name
+HAVING AVG(film.length) > 120;
+
+-- 40:  Para cada idioma, suma las tarifas de alquiler (rental_rate) de todas sus películas.
+
+SELECT 
+    la.language_id AS idioma_id,
+    la.name AS idioma,
+    SUM(film.rental_rate) AS total_tarifas_alquiler
+FROM
+    language la
+        JOIN
+    film ON la.language_id = film.language_id or la.language_id = film.original_language_id
+GROUP BY la.language_id , la.name;
+
+select count(*) from film;
+select sum(rental_rate) from film;
+select distinct(rental_rate) from film;
+
+-- 41:  Para cada cliente, cuenta cuántos alquileres realizó en fines de semana (SÁB-DO) usando DAYOFWEEK (1=Domingo).
+
+SELECT 
+    cu.customer_id AS cliente_id,
+    CONCAT(cu.first_name, ' ', cu.last_name) AS nombre_cliente,
+    COUNT(rental.rental_id) AS alquileres_fin_de_semana
+FROM
+    customer cu
+        JOIN
+    rental USING (customer_id)
+WHERE
+    DAYOFWEEK(rental_date) IN (1 , 7)
+GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
+
+-- 42:  Para cada actor, muestra el total de títulos distintos en los que participa (equivale a COUNT DISTINCT, sin subconsulta)
+
+SELECT 
+    actor.actor_id,
+    CONCAT(actor.first_name, ' ', actor.last_name) AS nombre_actor,
+    COUNT(DISTINCT film.title) AS titulos_que_participa
+FROM
+    actor
+        JOIN
+    film_actor USING (actor_id)
+        JOIN
+    film USING (film_id)
+GROUP BY actor_id , CONCAT(actor.first_name, ' ', actor.last_name);
+
+-- 43:  Para cada ciudad, cuenta cuántos clientes residen ahí (customer -> address -> city).
+
+SELECT 
+    city.city_id AS ciudad_id,
+    city.city AS ciudad,
+    COUNT(cu.customer_id) AS clientes_totales
+FROM
+    city
+        JOIN
+    address USING (city_id)
+        JOIN
+    customer cu USING (address_id)
+GROUP BY city.city_id , city.city;
+
+-- 44:  Para cada categoría, muestra cuántos actores distintos participan en películas de esa categoría.
+
+SELECT 
+    ca.category_id AS categoria_id,
+    ca.name AS nombre_categoria,
+    COUNT(DISTINCT fa.actor_id)
+FROM
+    category ca
+        JOIN
+    film_category USING (category_id)
+        JOIN
+    film USING (film_id)
+        JOIN
+    film_actor fa USING (film_id)
+GROUP BY ca.category_id , ca.name;
+
+-- 45:  Para cada tienda, cuenta cuántas copias totales (inventario) tiene de películas en 2006.
+
+SELECT 
+    store.store_id AS tienda,
+    COUNT(inv.inventory_id) AS copias_totales_2006
+FROM
+    store
+        JOIN
+    inventory inv USING (store_id)
+        JOIN
+    film ON inv.film_id = film.film_id
+        AND release_year = '2006'
+GROUP BY store.store_id;
+
+-- 46:  Para cada cliente, suma el total pagado por alquileres cuyo empleado pertenece a la tienda 1.
+
+SELECT 
+    cu.customer_id AS cliente_id,
+    CONCAT(cu.first_name, ' ', cu.last_name) AS nombre_cliente,
+    SUM(pa.amount) AS total_pagado
+FROM
+    customer cu
+        JOIN
+    payment pa ON cu.customer_id = pa.customer_id
+        JOIN
+    staff ON pa.staff_id = staff.staff_id
+        AND staff.store_id = 1
+GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
+
+-- 47:  Para cada película, cuenta cuántos actores tienen el apellido de longitud >= 5.
+
+SELECT 
+    film.film_id AS pelicula_id,
+    film.title AS titulo,
+    COUNT(actor.actor_id) AS cantidad_actores
+FROM
+    film
+        JOIN
+    film_actor USING (film_id)
+        JOIN
+    actor USING (actor_id)
+WHERE
+    LENGTH(last_name) >= 5
+GROUP BY film.film_id , film.title;
+
+-- 48:  Para cada categoría, suma la duración total (length) de sus películas.
+
+SELECT 
+    ca.category_id AS categoria_id,
+    ca.name AS nombre_categoria,
+    SUM(film.length) AS duracion_total
+FROM
+    category ca
+        JOIN
+    film_category USING (category_id)
+        JOIN
+    film USING (film_id)
+GROUP BY ca.category_id , ca.name;
+
+-- 49:  Para cada ciudad, suma los importes pagados por clientes que residen en esa ciudad.
+
+SELECT 
+    city.city_id AS ciudad_id,
+    city.city AS ciudad,
+    SUM(pa.amount) AS importes_pagados
+FROM
+    city
+        JOIN
+    address USING (city_id)
+        JOIN
+    customer USING (address_id)
+        JOIN
+    payment pa USING (customer_id)
+GROUP BY city.city_id , city.city;
+
+-- 50:  Para cada idioma, cuenta cuántos actores distintos participan en películas de ese idioma.
+
+SELECT 
+    la.language_id AS idioma_id,
+    la.name AS idioma,
+    COUNT(DISTINCT fa.actor_id) AS actores_participantes
+FROM
+    language la
+        JOIN
+    film ON la.language_id = film.language_id
+        JOIN
+    film_actor fa USING (film_id)
+GROUP BY la.language_id , la.name;
+
 
 
 
