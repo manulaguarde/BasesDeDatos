@@ -683,6 +683,36 @@ FROM
     film_actor fa USING (film_id)
 GROUP BY la.language_id , la.name;
 
+-- 51:  Para cada tienda, cuenta cuántos clientes activos (active=1) tiene.
+use sakila;
+
+SELECT 
+    store.store_id AS tienda,
+    COUNT(cu.active) AS total_clientes_activos
+FROM
+    store
+        JOIN
+    customer cu USING (store_id)
+WHERE
+    cu.active = 1
+GROUP BY store.store_id;
+
+select * from customer limit 5;
+
+-- 52:  Para cada cliente, cuenta en cuántas categorías distintas ha alquilado
+-- (aprox. vía film_category; requiere 4 tablas, aquí contamos películas 2006 por inventario).
+
+select cu.customer_id as cliente_id,
+concat(cu.first_name,' ',cu.last_name),
+count(distinct fc.category_id)
+from customer cu
+join rental using (customer_id)
+join inventory using (inventory_id)
+join film using (film_id)
+join film_category fc using (film_id)
+where film.release_year = '2006'
+group by cu.customer_id;
+
 
 
 
