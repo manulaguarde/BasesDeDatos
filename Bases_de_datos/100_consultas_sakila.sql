@@ -1,62 +1,62 @@
-SELECT 
-    language.language_id AS language_id,
-    language.name AS language_name,
-    MAX(replacement_cost) AS max_replacement_cost,
-    MIN(replacement_cost) AS min_replacement_cost
-FROM
-    language
-        JOIN
-    film ON film.language_id = language.language_id
-WHERE
-    film.film_id >= 10
-GROUP BY language.name , film.original_language_id , film.language_id;
-
 -- 1:  Para cada actor, muestra el número total de películas en las que aparece;
 -- es decir, cuenta cuántas filas de film_actor corresponden a cada actor.
 
 SELECT 
-    actor_id,
+    actor.actor_id as actor_id,
     CONCAT(actor.first_name, ' ', actor.last_name) AS nombre_actor,
     COUNT(fa.film_id) AS peliculas_totales
 FROM
     actor
         JOIN
     film_actor fa USING (actor_id)
-GROUP BY actor_id , CONCAT(actor.first_name, ' ', actor.last_name);
+GROUP BY actor.actor_id , CONCAT(actor.first_name, ' ', actor.last_name);
+
+-- Comentarios: selecciono cada actor y cuento las peliculas totales, en el join uniendo estas dos tablas se muestran para cada actor que pelicula esta asociada y agrupo por actor 
 
 -- 2:  Lista solo los actores que participan en 20 o más películas (umbral alto) con su conteo.
 
 SELECT 
+	actor.actor_id as actor_id,
     CONCAT(actor.first_name, ' ', actor.last_name) AS nombre_actor,
     COUNT(fa.film_id) AS participaciones_totales
 FROM
     actor
         JOIN
     film_actor fa USING (actor_id)
-GROUP BY actor_id , CONCAT(actor.first_name, ' ', actor.last_name)
+GROUP BY actor.actor_id , CONCAT(actor.first_name, ' ', actor.last_name)
 HAVING COUNT(fa.film_id) >= 20;
+
+-- Comentarios: consulta similar a la anterior pero añadiendo un filtro con having (porque es sobre el conteo de las peliculas) donde la participacion del actor sea mayor o igual a 20
 
 -- 3:  Para cada idioma, indica cuántas películas están catalogadas en ese idioma.
 
 SELECT 
-    la.name AS idioma, COUNT(film.film_id) AS total_peliculas
+    la.language_id AS idioma_id,
+    la.name AS idioma,
+    COUNT(film.film_id) AS total_peliculas
 FROM
     language la
         JOIN
     film ON film.language_id = la.language_id
-GROUP BY la.language_id;
+GROUP BY la.language_id, la.name;
+
+-- Comentarios: selecciono los idiomas (que solo hay uno) y cuento peliculas luego al unir ambas tablas aparecen cuantas peliculas estan asociadas a ese idioma (en este caso todas en ingles)
 
 -- 4:  Muestra el promedio de duración (length) de las películas por idioma y 
 -- filtra aquellos idiomas con duración media estrictamente mayor a 110 minutos.
 
 SELECT 
-    la.language_id, la.name AS idioma, AVG(film.length)
+    la.language_id,
+    la.name AS idioma,
+    AVG(film.length) AS duracion_media
 FROM
     language la
         JOIN
     film ON film.language_id = la.language_id
 GROUP BY la.language_id , la.name
 HAVING AVG(film.length) > 110;
+
+-- Comentarios: calculo el promedio de duración (length) de las películas agrupadas por idioma, usando HAVING para mostrar solo aquellos idiomas cuyo promedio supera los 110 minutos.
 
 -- 5:  Para cada película, muestra cuántas copias hay en el inventario.
 SELECT 
@@ -68,6 +68,8 @@ FROM
         JOIN
     inventory inv USING (film_id)
 GROUP BY film.film_id , film.title;
+
+-- Comentarios:muestro cada película junto con la cantidad de copias disponibles en el inventario. El JOIN vincula las películas con los registros del inventario y el COUNT contabiliza las copias por título.
 
 -- 6:  Lista solo las películas que tienen al menos 5 copias en inventario.
 
@@ -82,6 +84,8 @@ FROM
 GROUP BY film.film_id , film.title
 HAVING COUNT(inv.inventory_id) >= 5;
 
+-- Comentario: misma lógica que la anterior, pero agregando un filtro HAVING para mostrar únicamente las películas con 5 o más copias disponibles.
+
 -- 7:  Para cada artículo de inventario, cuenta cuántos alquileres se han realizado.
 
 SELECT 
@@ -92,6 +96,8 @@ FROM
         JOIN
     rental USING (inventory_id)
 GROUP BY inv.inventory_id;
+
+-- Comentario: muestro cada artículo del inventario (cada copia) y cuántas veces ha sido alquilado. El conteo se hace sobre rental_id, agrupando por inventory_id.
 
 -- 8:  Para cada cliente, muestra cuántos alquileres ha realizado en total.
 
@@ -104,6 +110,8 @@ FROM
         JOIN
     rental USING (customer_id)
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
+
+-- Comentario: muestro cada cliente junto con la cantidad total de alquileres realizados. La unión con rental permite contar los alquileres por cliente.
 
 -- 9:  Lista los clientes con 30 o más alquileres acumulados.
 
@@ -118,6 +126,8 @@ FROM
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name)
 HAVING COUNT(rental.rental_id) >= 30;
 
+-- Comentario: igual que la anterior, pero aplicando un filtro con HAVING para mostrar solo los clientes que tienen 30 o más alquileres acumulados.
+
 -- 10:  Para cada cliente, muestra el total de pagos (suma en euros/dólares) que ha realizado.
 
 SELECT 
@@ -129,6 +139,8 @@ FROM
         JOIN
     payment pa USING (customer_id)
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
+
+-- Comentario: calculo cuánto ha pagado en total cada cliente sumando todos sus pagos (amount). El JOIN une cada cliente con sus registros de pago.
 
 -- 11:  Muestra los clientes cuyo importe total pagado es al menos 200.
 
@@ -143,6 +155,8 @@ FROM
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name)
 HAVING SUM(pa.amount) >= 200;
 
+-- Comentario: similar a la anterior, pero filtrando con HAVING los clientes cuyo total de pagos acumulado es igual o superior a 200.
+
 -- 12:  Para cada empleado (staff), muestra el número de pagos que ha procesado.
 
 SELECT 
@@ -154,6 +168,8 @@ FROM
         JOIN
     payment pa USING (staff_id)
 GROUP BY staff.staff_id , CONCAT(staff.first_name, ' ', staff.last_name);
+
+-- Comentario: muestro cada empleado y la cantidad de pagos que ha procesado. El conteo se realiza sobre la columna amount de la tabla payment, agrupando por empleado.
 
 -- 13:  Para cada empleado, muestra el importe total procesado.
 
@@ -167,6 +183,8 @@ FROM
     payment pa USING (staff_id)
 GROUP BY staff.staff_id , CONCAT(staff.first_name, ' ', staff.last_name);
 
+-- Comentario: muestra cuánto dinero ha gestionado en total cada empleado, sumando los importes (amount) de los pagos que procesó.
+
 -- 14:  Para cada tienda, cuenta cuántos artículos de inventario tiene.
 
 SELECT 
@@ -178,6 +196,8 @@ FROM
     inventory inv USING (store_id)
 GROUP BY store.store_id;
 
+-- Comentario: cuenta cuántos artículos de inventario (copias de películas) pertenecen a cada tienda. El COUNT se aplica sobre los inventory_id agrupados por store_id
+
 -- 15:  Para cada tienda, cuenta cuántos clientes tiene asignados.
 SELECT 
     store.store_id AS tienda,
@@ -188,6 +208,8 @@ FROM
     customer cu USING (store_id)
 GROUP BY store.store_id;
 
+-- Comentario: muestra cuántos clientes están asociados a cada tienda. El conteo se hace sobre customer_id agrupando por tienda.
+
 -- 16: Para cada tienda, cuenta cuántos empleados (staff) tiene asignados.
 SELECT 
     store.store_id AS tienda,
@@ -197,6 +219,8 @@ FROM
         JOIN
     staff USING (store_id)
 GROUP BY store.store_id;
+
+-- Comentario: cuenta el número de empleados que trabajan en cada tienda. El JOIN enlaza las tablas store y staff según store_id.
 
 -- 17:  Para cada dirección (address), cuenta cuántas tiendas hay ubicadas ahí (debería ser 0/1 en datos estándar).
 
@@ -210,6 +234,8 @@ FROM
     store USING (address_id)
 GROUP BY ad.address_id , ad.address;
 
+-- Comentario: muestra cuántas tiendas están ubicadas en cada dirección. Normalmente cada dirección solo debería tener una tienda (resultado 0 o 1).
+
 -- 18:  Para cada dirección, cuenta cuántos empleados residen en esa dirección. 
 
 SELECT 
@@ -222,6 +248,8 @@ FROM
     staff USING (address_id)
 GROUP BY ad.address_id , ad.address;
 
+-- Comentario: indica cuántos empleados residen en cada dirección. El JOIN une address con staff por address_id y se agrupa por dirección.
+
 -- 19:  Para cada dirección, cuenta cuántos clientes residen ahí.
 SELECT 
     ad.address_id AS direccion_id,
@@ -232,6 +260,8 @@ FROM
         JOIN
     customer cu USING (address_id)
 GROUP BY ad.address_id , ad.address;
+
+-- Comentario: muestra cuántos clientes viven en cada dirección. Se cuentan los clientes asociados a cada address_id.
 
 -- 20:  Para cada ciudad, cuenta cuántas direcciones hay registradas.
 
@@ -245,6 +275,8 @@ FROM
     address ad USING (city_id)
 GROUP BY city.city_id , city.city;
 
+-- Comentario: cuenta cuántas direcciones están registradas en cada ciudad, uniendo city con address mediante city_id.
+
 -- 21:  Para cada país, cuenta cuántas ciudades existen.
 
 SELECT 
@@ -256,6 +288,8 @@ FROM
         JOIN
     city USING (country_id)
 GROUP BY country.country_id , country.country;
+
+-- Comentario: muestra cuántas ciudades existen en cada país. Se realiza un JOIN entre country y city, agrupando por país.
 
 -- 22:  Para cada idioma, calcula la duración media de películas y muestra solo los idiomas con media entre 90 y 120 inclusive
 
@@ -269,6 +303,9 @@ FROM
     film ON film.language_id = la.language_id
 GROUP BY la.language_id , la.name
 HAVING AVG(film.length) BETWEEN 90 AND 120;
+
+
+
 
 -- 23:  Para cada película, cuenta el número de alquileres que se han hecho de cualquiera de sus copias (usando inventario).
 
