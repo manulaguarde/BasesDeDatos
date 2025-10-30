@@ -1,6 +1,6 @@
 -- 1:  Para cada actor, muestra el número total de películas en las que aparece;
 -- es decir, cuenta cuántas filas de film_actor corresponden a cada actor.
-
+use sakila;
 SELECT 
     actor.actor_id as actor_id,
     CONCAT(actor.first_name, ' ', actor.last_name) AS nombre_actor,
@@ -579,6 +579,7 @@ WHERE
     DAYOFWEEK(rental_date) IN (1 , 7)
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
 
+
 -- 42:  Para cada actor, muestra el total de títulos distintos en los que participa (equivale a COUNT DISTINCT, sin subconsulta)
 
 SELECT 
@@ -786,7 +787,7 @@ GROUP BY city.city_id , city.city;
 SELECT 
     ca.category_id AS categoria_id,
     ca.name AS categoria,
-    AVG(film.replacement_cost) AS media_coste_de_reemplazo
+    AVG(film.replacement_cost) AS media_coste_de_reemplazosys_config
 FROM
     category ca
         JOIN
@@ -1157,7 +1158,7 @@ FROM
         JOIN
     rental USING (customer_id)
 WHERE
-    DATE(rental_date) = DATE(return_date)
+    DATE(rental.rental_date) = DATE(rental.return_date)
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
 
 -- 78:  Para cada tienda, cuenta cuántos clientes distintos realizaron pagos en 2005.
@@ -1232,7 +1233,7 @@ SELECT
 FROM
     rental
 GROUP BY HOUR(rental.rental_date)
-ORDER BY horas;
+ORDER BY hora_del_dia;
 
 -- 83:  Para cada tienda, muestra la media de length de las películas alquiladas en 2005 y filtra las tiendas con media >= 100.
 
