@@ -1,6 +1,6 @@
 -- 1:  Para cada actor, muestra el número total de películas en las que aparece;
 -- es decir, cuenta cuántas filas de film_actor corresponden a cada actor.
-
+use sakila;
 SELECT 
     actor.actor_id as actor_id,
     CONCAT(actor.first_name, ' ', actor.last_name) AS nombre_actor,
@@ -304,14 +304,16 @@ FROM
 GROUP BY la.language_id , la.name
 HAVING AVG(film.length) BETWEEN 90 AND 120;
 
+
 -- Comentario: Calculo la duración media de las películas agrupadas por idioma y filtro solo los idiomas cuya
 -- duración media está entre 90 y 120 minutos.
+
 
 
 -- 23:  Para cada película, cuenta el número de alquileres que se han hecho de cualquiera de sus copias (usando inventario).
 
 SELECT 
-    inv.film_id AS peliculas,
+    inv.film_id AS pelicula_id,
     film.title AS titulo,
     COUNT(rental.rental_id) AS total_alquileres
 FROM
@@ -322,7 +324,9 @@ FROM
     rental USING (inventory_id)
 GROUP BY inv.film_id;
 
--- Comentario: Recorro film -> inventory -> rental para contar cuántos alquileres se han hecho de cada película.
+
+-- Comentario: Muestra el número de alquileres totales que tuvo cada pelicula, uniendo con el inventario donde estan las copias de las peliculas
+
 
 
 -- 24:  Para cada cliente, cuenta cuántos pagos ha realizado en 2005 (usando el año de payment_date).
@@ -339,21 +343,20 @@ WHERE
     YEAR(pa.payment_date) = '2005'
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
 
--- Comentario: Recorro customer -> payment y cuento cuántos pagos hizo cada cliente en 2005, usando YEAR sobre payment_date.
+-- Comentario: Muestra la cantidad de pagos que se realizaron por cada cliente en 2005
 
 
 -- 25:  Para cada película, muestra el promedio de tarifa de alquiler (rental_rate)
 -- de las copias existentes (es un promedio redundante pero válido).
 
-SELECT 
-    film.film_id AS inventario_id,
+SELECT    film.film_id AS inventario_id,
     film.title AS pelicula,
     AVG(film.rental_rate) AS promedio_tarifa_alquiler
 FROM
     film
 GROUP BY film.film_id , film.title;
 
--- Comentario: Para cada película, calculo la media de rental_rate de la tabla film. Agrupo por película.
+-- Comentario: Muestra el promedio de la ganancia por película alquilada
 
 
 -- 26:  Para cada actor, muestra la duración media (length) de sus películas.
@@ -370,18 +373,22 @@ FROM
     film USING (film_id)
 GROUP BY actor.actor_id , CONCAT(actor.first_name, ' ', actor.last_name);
 
+<<<<<<< HEAD
 -- Comentario: Recorro actor -> film_actor -> film para calcular la duración media de sus películas.
 
 
+=======
+-- Comentario: Aqui se muestra la duracion media que tienen las peliculas donde aparecen cada actor
+>>>>>>> 26e085e0687037a25456298f590ccf9ed92be6cf
 
 -- 27:  Para cada ciudad, cuenta cuántos clientes hay (usando la relación cliente->address->city requiere 3 tablas;
 -- aquí contamos direcciones por ciudad).
 
 SELECT 
-    city.city_id AS ciudad_id,
-    city.city AS ciudad,
-    COUNT(cu.customer_id) AS total_clientes,
-    COUNT(ad.address_id) AS total_direcciones
+   city.city_id AS ciudad_id,
+   city.city AS ciudad,
+   COUNT(cu.customer_id) AS total_clientes
+	-- COUNT(ad.address_id) AS total_direcciones
 FROM
     city
         JOIN
@@ -389,19 +396,25 @@ FROM
         JOIN
     customer cu USING (address_id)
 GROUP BY city.city_id , city.city
-ORDER BY ciudad_id;
+ORDER BY city_id;
+
+
+-- Comentario: Aqui uno ciudad con dirrecciones y con cliente y cuento clientes, de esta manera cuenta cuantos clientes hay en cada ciudad
+-- el resultado espera que tambien se cuenten las direcciones que no tienen clientes registrados, como las del staff o las tiendas, pero no es lo que solicita el enunciado 
 
 -- 28:  Para cada película, cuenta cuántos actores tiene asociados.
 
 SELECT 
     film.film_id AS pelicula_id,
     film.title AS pelicula,
-    COUNT(film_actor.actor_id)
+    COUNT(film_actor.actor_id) AS actores_participantes
 FROM
     film
         JOIN
     film_actor USING (film_id)
 GROUP BY film.film_id , film.title;
+
+-- Muestra cuantos actores estan asociados, participan, de cada pelicula
 
 -- 29:  Para cada categoría (por id), cuenta cuántas películas pertenecen a ella (sin nombre de categoría para mantener 2 tablas).
 
@@ -582,6 +595,7 @@ WHERE
     DAYOFWEEK(rental_date) IN (1 , 7)
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
 
+
 -- 42:  Para cada actor, muestra el total de títulos distintos en los que participa (equivale a COUNT DISTINCT, sin subconsulta)
 
 SELECT 
@@ -729,7 +743,7 @@ WHERE
 GROUP BY store.store_id;
 
 -- 52:  Para cada cliente, cuenta en cuántas categorías distintas ha alquilado
--- (aprox. vía film_category; requiere 4 tablas, aquí contamos películas 2006 por inventario).
+-- (aprox. vía film_category; requiere 4 tablas, aquí contamos películas que se alquilaron 2006 por inventario).
 
 SELECT 
     cu.customer_id AS cliente_id,
@@ -749,6 +763,8 @@ WHERE
     YEAR(rental.rental_date) = '2006'
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
 
+-- aqui hice una correccion del enunciado, porque en principio parece que pide películas que son del 2006 y no los alquileres que se efectuaron en 2006
+
 -- 53:  Para cada empleado, cuenta cuántos clientes diferentes le han pagado.
 
 SELECT 
@@ -761,7 +777,7 @@ FROM
     payment USING (staff_id)
 GROUP BY staff.staff_id , CONCAT(staff.first_name, ' ', staff.last_name);
 
--- 54:  Para cada ciudad, cuenta cuántas películas del año 2006 han sido alquiladas por residentes en esa ciudad.
+-- 54:  Para cada ciudad, cuenta cuántas películas que han sido alquiladas en 2006 por residentes en esa ciudad.
 
 SELECT 
     city.city_id AS ciudad_id,
@@ -779,13 +795,15 @@ WHERE
     YEAR(rental.rental_date) = '2006'
 GROUP BY city.city_id , city.city;
 
+-- En este pasa similar que en la consuta 52, se espera segun el resultado que se filtre por el año que fueron alquiladas pero el 
+-- enunciado original da a entender que se filtre por el año de estreno
 
 -- 55:  Para cada categoría, calcula el promedio de replacement_cost de sus películas.
 
 SELECT 
     ca.category_id AS categoria_id,
     ca.name AS categoria,
-    AVG(film.replacement_cost)
+    AVG(film.replacement_cost) AS media_coste_de_reemplazosys_config
 FROM
     category ca
         JOIN
@@ -1156,7 +1174,7 @@ FROM
         JOIN
     rental USING (customer_id)
 WHERE
-    DATE(rental_date) = DATE(return_date)
+    DATE(rental.rental_date) = DATE(rental.return_date)
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
 
 -- 78:  Para cada tienda, cuenta cuántos clientes distintos realizaron pagos en 2005.
@@ -1231,7 +1249,7 @@ SELECT
 FROM
     rental
 GROUP BY HOUR(rental.rental_date)
-ORDER BY horas;
+ORDER BY hora_del_dia;
 
 -- 83:  Para cada tienda, muestra la media de length de las películas alquiladas en 2005 y filtra las tiendas con media >= 100.
 
