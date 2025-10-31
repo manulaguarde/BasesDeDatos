@@ -82,7 +82,8 @@ FROM
         JOIN
     inventory inv USING (film_id)
 GROUP BY film.film_id , film.title
-HAVING COUNT(inv.inventory_id) >= 5;
+HAVING COUNT(inv.inventory_id) >= 5
+LIMIT 5000;
 
 -- Comentario: misma lógica que la anterior, pero agregando un filtro HAVING para mostrar únicamente las películas con 5 o más copias disponibles.
 
@@ -373,13 +374,7 @@ FROM
     film USING (film_id)
 GROUP BY actor.actor_id , CONCAT(actor.first_name, ' ', actor.last_name);
 
-<<<<<<< HEAD
 -- Comentario: Recorro actor -> film_actor -> film para calcular la duración media de sus películas.
-
-
-=======
--- Comentario: Aqui se muestra la duracion media que tienen las peliculas donde aparecen cada actor
->>>>>>> 26e085e0687037a25456298f590ccf9ed92be6cf
 
 -- 27:  Para cada ciudad, cuenta cuántos clientes hay (usando la relación cliente->address->city requiere 3 tablas;
 -- aquí contamos direcciones por ciudad).
@@ -622,7 +617,12 @@ FROM
     address USING (city_id)
         JOIN
     customer cu USING (address_id)
-GROUP BY city.city_id , city.city;
+GROUP BY city.city_id , city.city
+limit 10000;
+
+-- Comentario: sucede un poco igual que en una consulta anterior
+-- el resultado espera que tambien se cuenten las direcciones que no tienen clientes registrados, como las del staff o las tiendas,
+-- pero no es lo que solicita el enunciado 
 
 -- 44:  Para cada categoría, muestra cuántos actores distintos participan en películas de esa categoría.
 
@@ -683,7 +683,13 @@ FROM
     actor USING (actor_id)
 WHERE
     LENGTH(last_name) >= 5
-GROUP BY film.film_id , film.title;
+GROUP BY film.film_id , film.title
+LIMIT 10000;
+
+-- agrego un limite mayor para que aparezcan todos los titulos de peliculas, el orden cambia
+-- lo hace segun se hayan registrado en la BBDD las películas ya no ordena por id como lo hacia antes por defecto
+-- me da el resultado esperado
+-- me da a entender que en resultados anteriores paso algo similar
 
 -- 48:  Para cada categoría, suma la duración total (length) de sus películas.
 
@@ -713,7 +719,10 @@ FROM
     customer USING (address_id)
         JOIN
     payment pa USING (customer_id)
-GROUP BY city.city_id , city.city;
+GROUP BY city.city_id , city.city
+LIMIT 10000;
+
+-- agrego el limit para que el resultado sea el mismo que el esperado (de manera que no ordene por el id de la ciudad)
 
 -- 50:  Para cada idioma, cuenta cuántos actores distintos participan en películas de ese idioma.
 
@@ -743,7 +752,7 @@ WHERE
 GROUP BY store.store_id;
 
 -- 52:  Para cada cliente, cuenta en cuántas categorías distintas ha alquilado
--- (aprox. vía film_category; requiere 4 tablas, aquí contamos películas que se alquilaron 2006 por inventario).
+-- (aprox. vía film_category; requiere 4 tablas, aquí contamos películas que se alquilaron en 2006 por inventario).
 
 SELECT 
     cu.customer_id AS cliente_id,
@@ -793,10 +802,12 @@ FROM
     rental USING (customer_id)
 WHERE
     YEAR(rental.rental_date) = '2006'
-GROUP BY city.city_id , city.city;
+GROUP BY city.city_id , city.city
+limit 10000;
 
 -- En este pasa similar que en la consuta 52, se espera segun el resultado que se filtre por el año que fueron alquiladas pero el 
 -- enunciado original da a entender que se filtre por el año de estreno
+-- ademas de agregar el limit que ordena igual que el resultado esperado
 
 -- 55:  Para cada categoría, calcula el promedio de replacement_cost de sus películas.
 
@@ -959,7 +970,8 @@ FROM
     payment pa USING (customer_id)
 WHERE
     YEAR(payment_date) = '2005'
-GROUP BY city.city_id , city.city;
+GROUP BY city.city_id , city.city
+limit 10000;
 
 -- 65:  Para cada tienda, cuenta cuántos actores distintos aparecen en las películas de su inventario.
 
@@ -1102,7 +1114,7 @@ GROUP BY store.store_id , category.name;
 SELECT 
     actor.actor_id AS actor_id,
     CONCAT(actor.first_name, ' ', actor.last_name) AS actor,
-    COUNT(DISTINCT inventory.store_id)
+    COUNT(DISTINCT inventory.store_id) as tiendas_distintas
 FROM
     actor
         JOIN
@@ -1176,6 +1188,7 @@ FROM
 WHERE
     DATE(rental.rental_date) = DATE(rental.return_date)
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
+
 
 -- 78:  Para cada tienda, cuenta cuántos clientes distintos realizaron pagos en 2005.
 
@@ -1350,7 +1363,7 @@ GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
 SELECT 
     ca.category_id AS categoria_id,
     ca.name AS categoria,
-    AVG(LENGTH(film.title))
+    AVG(LENGTH(film.title)) AS longitud_media_del_titulo
 FROM
     category ca
         JOIN
@@ -1455,16 +1468,22 @@ GROUP BY store.store_id;
 
 -- 95:  Para cada actor, cuenta cuántas películas suyas fueron alquiladas por al menos 5 clientes distintos (se cuenta alquileres y luego se filtra por HAVING).
 
-select actor.actor_id as actor_id,
-concat(actor.first_name,' ',actor.last_name) as actor,
-count(film.film_id)
-from actor
-join film_actor using (actor_id)
-join film using (film_id)
-join inventory using (film_id) 
-join rental using (inventory_id)
-group by  actor.actor_id, concat(actor.first_name,' ',actor.last_name)
-having count(distinct rental.customer_id) >= 5;
+SELECT 
+    actor.actor_id AS actor_id,
+    CONCAT(actor.first_name, ' ', actor.last_name) AS actor,
+    COUNT(DISTINCT rental.customer_id) as clientes_distintos
+FROM
+    actor
+        JOIN
+    film_actor USING (actor_id)
+        JOIN
+    film USING (film_id)
+        JOIN
+    inventory USING (film_id)
+        JOIN
+    rental USING (inventory_id)
+GROUP BY actor.actor_id , CONCAT(actor.first_name, ' ', actor.last_name)
+HAVING COUNT(DISTINCT rental.customer_id) >= 5;
 
 -- 96:  Para cada idioma, muestra el número de películas cuyo título empieza por la letra 'A' y que han sido alquiladas.
 
