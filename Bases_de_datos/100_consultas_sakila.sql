@@ -562,7 +562,9 @@ SELECT
 FROM
     language la
         JOIN
-    film ON la.language_id = film.language_id or la.language_id = film.original_language_id
+    film ON la.language_id = film.language_id
+        JOIN
+    inventory USING (film_id)
 GROUP BY la.language_id , la.name;
 
 -- 41:  Para cada cliente, cuenta cuántos alquileres realizó en fines de semana (SÁB-DO) usando DAYOFWEEK (1=Domingo).
