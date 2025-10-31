@@ -296,7 +296,7 @@ GROUP BY country.country_id , country.country;
 SELECT 
     la.language_id AS idioma_id,
     la.name AS idioma,
-    AVG(film.length)
+    AVG(film.length) AS duracion_media
 FROM
     language la
         JOIN
@@ -304,7 +304,8 @@ FROM
 GROUP BY la.language_id , la.name
 HAVING AVG(film.length) BETWEEN 90 AND 120;
 
-
+-- Comentario: Calculo la duración media de las películas agrupadas por idioma y filtro solo los idiomas cuya
+-- duración media está entre 90 y 120 minutos.
 
 
 -- 23:  Para cada película, cuenta el número de alquileres que se han hecho de cualquiera de sus copias (usando inventario).
@@ -321,6 +322,9 @@ FROM
     rental USING (inventory_id)
 GROUP BY inv.film_id;
 
+-- Comentario: Recorro film -> inventory -> rental para contar cuántos alquileres se han hecho de cada película.
+
+
 -- 24:  Para cada cliente, cuenta cuántos pagos ha realizado en 2005 (usando el año de payment_date).
 
 SELECT 
@@ -335,23 +339,29 @@ WHERE
     YEAR(pa.payment_date) = '2005'
 GROUP BY cu.customer_id , CONCAT(cu.first_name, ' ', cu.last_name);
 
+-- Comentario: Recorro customer -> payment y cuento cuántos pagos hizo cada cliente en 2005, usando YEAR sobre payment_date.
+
+
 -- 25:  Para cada película, muestra el promedio de tarifa de alquiler (rental_rate)
 -- de las copias existentes (es un promedio redundante pero válido).
 
 SELECT 
     film.film_id AS inventario_id,
     film.title AS pelicula,
-    AVG(film.rental_rate)
+    AVG(film.rental_rate) AS promedio_tarifa_alquiler
 FROM
     film
 GROUP BY film.film_id , film.title;
+
+-- Comentario: Para cada película, calculo la media de rental_rate de la tabla film. Agrupo por película.
+
 
 -- 26:  Para cada actor, muestra la duración media (length) de sus películas.
 
 SELECT 
     actor.actor_id AS actor_id,
     CONCAT(actor.first_name, ' ', actor.last_name) AS actor,
-    AVG(film.length)
+    AVG(film.length) AS duracion_media
 FROM
     actor
         JOIN
@@ -359,6 +369,10 @@ FROM
         JOIN
     film USING (film_id)
 GROUP BY actor.actor_id , CONCAT(actor.first_name, ' ', actor.last_name);
+
+-- Comentario: Recorro actor -> film_actor -> film para calcular la duración media de sus películas.
+
+
 
 -- 27:  Para cada ciudad, cuenta cuántos clientes hay (usando la relación cliente->address->city requiere 3 tablas;
 -- aquí contamos direcciones por ciudad).
@@ -546,8 +560,13 @@ SELECT
 FROM
     language la
         JOIN
-    film ON la.language_id = film.language_id or la.language_id = film.original_language_id
+    film ON la.language_id = film.language_id
+        JOIN
+    inventory USING (film_id)
 GROUP BY la.language_id , la.name;
+
+-- Comentario: Uno lenguage con peliculas, y ademas con inventory, de esta manera contara tambien las copias de las peliculas y 
+-- lo agregara a la tarifa
 
 -- 41:  Para cada cliente, cuenta cuántos alquileres realizó en fines de semana (SÁB-DO) usando DAYOFWEEK (1=Domingo).
 
