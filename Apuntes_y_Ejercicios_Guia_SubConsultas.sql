@@ -113,4 +113,230 @@ WHERE
 
 -- =========  2 SUBCONSULTAS CORRELACIONADAS (EXISTS y NOT EXISTS) ================
 
+-- ===EXISTS===
+-- clientes que al menos hayan realizado un alquier.
+SELECT 
+    first_name, last_name
+FROM
+    customer c -- la consulta externa selecciona todos los clientes
+WHERE
+    EXISTS( SELECT  -- y la interna busca que haya coincidencia entre el customer id de la tabla customer con el customer id de la tabla rental
+            1 -- podria utilizar tambien *
+        FROM
+            rental r
+        WHERE
+            r.customer_id = c.customer_id); -- ¿existe al menos una fila en el resultado de subconsulta?
+
+-- si hay coincidencia pasa el filtro de exist y devuelve el cliente que tiene al menos un alquiler
+
+-- ===NOT EXISTS===
+-- peliculas (con sus copias) que nunca han sido alquiladas
+
+SELECT 
+    title
+FROM
+    film f -- recorre todas las películas de la tabla film
+WHERE
+    NOT EXISTS( SELECT 
+            1
+        FROM
+            inventory i
+                JOIN
+            rental AS r USING (inventory_id) -- encuentra cualquier alquiler que le corresponda una copia
+        WHERE
+            i.film_id = f.film_id); -- vuelve a comparar la existencia  del alquiler con la pelicula mediante film_id pero ahora devuelve el dato si este no existe
+
+-- el resultado es la lista de titulos de las peliculas nunca rentadas
+
+-- Otro uso típico de subconsultas correlacionadas con NOT EXISTS es para preguntas del tipo "para cada X
+-- que cumpla una condicion con todos los Y relacionados"
+
+-- Ej: actores que han participado en todas las categorías de peliculas
+
+SELECT 
+    a.actor_id, a.first_name, a.last_name
+FROM
+    actor a
+WHERE
+    NOT EXISTS( SELECT 
+            1
+        FROM
+            category c
+        WHERE
+            NOT EXISTS( SELECT 
+                    1
+                FROM
+                    film_actor fa
+                        JOIN
+                    film_category fc USING (film_id)
+                WHERE
+                    fa.actor_id = a.actor_id
+                        AND fc.category_id = c.category_id));
+                        
+-- (ESTA TENGO QUE REPASARLA PORQUE NO LO ENTENDI MUY BIEN)
+
+-- lo importante es notar la doble negacion "no existe una categoria tal que no exista una pelicula de ese actor en dicha categoria"
+-- equivale a "el actor tiene al menos una película en cada categoría"
+
+-- ====2.1 Algunos ejemplos mas====
+
+-- Ej 1: Peliculas de la categoria "children" (camino y pasos)
+-- camino de tablas: category->film_category->film
+-- Paso 1: obtener category_id de "Children"
+
+SELECT 
+    category_id
+FROM
+    category
+WHERE
+    name = 'Children'; -- id=3
+    
+-- Paso 2: con ese category_id, obtener film_id en film_category
+
+SELECT 
+    film_id
+FROM
+    film_category
+WHERE
+    category_id = 3; -- todos los film_id en la tabla film_category que concidan con el category_id '3'
+
+-- Paso 3: filtrar film con IN (lista de film_id)
+
+SELECT 
+    title
+FROM
+    film -- mostramos todas las películas (titulos)
+WHERE
+    film_id IN (SELECT -- donde film_id esté en la tabla film_category
+            film_id
+        FROM
+            film_category
+        WHERE
+            category_id = (SELECT -- pero además que el id de la categoria sea 3
+                    category_id
+                FROM
+                    category
+                WHERE
+                    name = 'Children')); -- osea todas las peliculas cuyo id esté relacionado con el id '3' de la categoria (que pertenece a children)
+                    
+-- SUBCONSULTAS CORRELACIONADAS CON EXISTS
+
+-- a veces la condicion de filtrado requiere verificar la existencia o ausencia de las filas relacionadas
+-- para cada fila de la consulta externa. Para esos casos se usa EXISTS y NOT EXISTST
+
+-- Ejemplo 2: Películas nunca aluiladas (camino y pasos).
+-- Camino de tablas: film->(anti-join) inventory -> rental
+
+-- Paso 1: consulta exterior:
+
+select f.film_id, f.title
+from film f;
+
+-- Paso 2: subconsulta sin correlación (estructura mínima)
+
+SELECT 
+    1
+FROM
+    inventory i
+        JOIN
+    rental r USING (inventory_id); -- creo que 1 es donde haya coincidencia (devuelve 1)
+
+-- Paso 3: correlacionar con la fila exterior (i.film_id = f.film_id)
+
+SELECT 
+    1
+FROM
+    inventory i
+        JOIN
+    rental r USING (inventory_id)
+WHERE
+    i.film_id = f.film_id;
+    
+-- Paso 4: usar NOT EXISTS
+
+SELECT 
+    f.film_id, f.title
+FROM
+    film f
+WHERE
+    NOT EXISTS( SELECT 
+            1
+        FROM
+            inventory i
+                JOIN
+            rental r USING (inventory_id)
+        WHERE
+            i.film_id = f.film_id)
+ORDER BY f.title;
+
+-- Ejemplo 3: Actores con alguna película de length > 120 (camino y pasos)
+-- camino de tablas: actor->film_actor->film
+-- Paso 1: exterior
+
+SELECT 
+    a.actor_id, a.first_name, a.last_name
+FROM
+    actor a;
+    
+-- Paso 2: subconsulta sin correlación (estructura mínima)
+
+SELECT 
+    1
+FROM
+    film_actor fa
+        JOIN
+    film f USING (film_id)
+WHERE
+    f.length > 120;
+    
+-- Paso 3: correlacionar con la fila exterior
+
+SELECT 
+    1
+FROM
+    film_actor fa
+        JOIN
+    film f USING (film_id)
+WHERE
+    fa.actor_id = a.actor_id
+        AND f.length > 120;
+
+-- Paso 4: usar EXISTS
+
+SELECT 
+    a.actor_id, a.first_name, a.last_name
+FROM
+    actor a
+WHERE
+    EXISTS( SELECT 
+            1
+        FROM
+            film_actor fa
+                JOIN
+            film f USING (film_id)
+        WHERE
+            fa.actor_id = a.actor_id
+                AND f.length > 120)
+ORDER BY a.last_name , a.first_name;
+
+-- ====SUBCONSULTAS EN LA LISTA SELECT (campos calculados por fila)====
+
+-- se colocan en el select como parte de columnas calculadas en la salida, deben ser de tipo escalar (devuelven un unico valor por cada fila externa)
+-- Ej: mostrar cada película junto con el número total de veces que ha sido alquilada.
+
+SELECT 
+    f.title,
+    (SELECT 
+            COUNT(*) -- cuenta todos los film_id (de las copias en inventory) que tienen al menos un alquiler
+        FROM
+            rental r
+                JOIN
+            inventory i USING (inventory_id) 
+        WHERE
+            i.film_id = f.film_id) AS total_rentals -- se muestra como columna el resultado de la subconsulta
+FROM
+    film f;
+
+-- esta manera es equivalente a hacer un join con rental e inventory y agruparlo con film
+-- pero a veces la subconsulta resulta más sencilla de entender "para esta pelicula, calcula este dato agregado"
 
