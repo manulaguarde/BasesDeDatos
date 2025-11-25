@@ -643,6 +643,139 @@ SELECT
         WHERE
             f.rating = 'R') AS films_rating_r;
             
--- CTE (WITH) -> Actores con al menos 30 películas
+-- CTE -Common Table Expression- (WITH) -> Actores con al menos 30 películas
     
+with film_count as(
+select fa.actor_id, count(*) as total_films
+from film_actor fa
+group by fa.actor_id
+)
+select a.actor_id, a.first_name, a.last_name, fc.total_films
+from film_count as fc
+join actor a on a.actor_id = fc.actor_id
+where fc.total_films >= 30;
+
+-- Las CTEs son una alternativa mas legible a las subconsultas derivadas. Permiten reutilizar resultados intermedios con nombres temporales
+-- y facilitan la lectura de consultas complejas
+
+-- ==============6 Para Practicar=================
+
+-- 6.1 Derivada - Películas por idioma
+
+SELECT 
+    l.language_id, l.name, t.films_in_language
+FROM
+    (SELECT 
+        f.language_id, COUNT(*) AS films_in_language
+    FROM
+        film f
+    GROUP BY f.language_id) AS t
+        JOIN
+    language l USING (language_id);
+    
+-- 6.2 Derivada - Idiomas con AVG(length)>110
+
+SELECT 
+    l.language_id, l.name, t.avg_length
+FROM
+    (SELECT 
+        f.language_id, AVG(f.length) AS avg_length
+    FROM
+        film f
+    GROUP BY f.language_id) AS t
+        JOIN
+    language l USING (language_id)
+WHERE
+    t.avg_length > 110;
+    
+-- 6.3 Derivada - Max/Min replacement_cost por idioma
+
+SELECT 
+    l.language_id,
+    l.name,
+    t.max_replacement_cost,
+    t.min_replacement_cost
+FROM
+    (SELECT 
+        f.language_id,
+            MAX(f.replacement_cost) AS max_replacement_cost,
+            MIN(f.replacement_cost) AS min_replacement_cost
+    FROM
+        film f
+    GROUP BY f.language_id) AS t
+        JOIN
+    language l USING (language_id);
+    
+-- 6.4 Correlacionada (Exists) - Idiomas con peliculas rating='R'
+
+SELECT 
+    l.language_id, l.name
+FROM
+    language l
+WHERE
+    EXISTS( SELECT 
+            1
+        FROM
+            film f
+        WHERE
+            f.language_id = l.language_id
+                AND f.rating = 'R');
+                
+-- 6.5 Escalar - Nº de idiomas distintos en film
+SELECT 
+    (SELECT 
+            COUNT(DISTINCT f.language_id)
+        FROM
+            film f) AS film_languages;
+            
+-- 6.6 Escalar - Nº de películas rating ='R'
+
+SELECT 
+    (SELECT 
+            COUNT(f.film_id)
+        FROM
+            film f
+        WHERE
+            rating = 'R') AS films_rating_r;
+            
+-- 6.7 Derivada - Idioma con más películas (TOP-1)
+
+SELECT 
+    l.name, t.films_in_language
+FROM
+    (SELECT 
+        f.language_id, COUNT(f.language_id) AS films_in_language
+    FROM
+        film f
+    GROUP BY f.language_id) AS t
+        JOIN
+    language l USING (language_id)
+ORDER BY t.films_in_language DESC
+LIMIT 1;
+
+-- 6.8 Derivada - Idioma con mayor AVG(length) (TOP-1)
+
+SELECT 
+    l.name, t.avg_length
+FROM
+    (SELECT 
+        f.language_id, AVG(f.length) AS avg_length
+    FROM
+        film f
+    GROUP BY f.language_id) AS t
+        JOIN
+    language l USING (language_id)
+ORDER BY t.avg_length DESC
+LIMIT 1;
+
+-- 6.9 Escalar - Media global de length
+
+SELECT 
+    (SELECT 
+            AVG(f.length)
+        FROM
+            film f) AS avg_global;
+            
+
+
 
