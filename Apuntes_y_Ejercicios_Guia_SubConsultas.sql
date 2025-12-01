@@ -454,6 +454,9 @@ WHERE
 
 -- ------------------------------------------------------------------------------------------
 -- =====CONCLUSIONES=====
+-- ESCALARES: Dentro de select - Crea una columna
+-- DERIVADAS: Dentro de from -  Crea una tabla derivada (tiene que llevar un alias si o si)
+-- CORRELACIONALES: dentro del where
 -- ------------------------------------------------------------------------------------------
 -- =======EJERCICIOS DE PRACTICA=======
 
@@ -775,6 +778,148 @@ SELECT
             AVG(f.length)
         FROM
             film f) AS avg_global;
+            
+-- Correlacionada (NOT EXISTS) — Idiomas de language sin películas
+
+SELECT 
+    l.language_id, l.name
+FROM
+    language l
+WHERE
+    NOT EXISTS( SELECT 
+            1
+        FROM
+            film f
+        WHERE
+            l.language_id = f.language_id);
+            
+SELECT 
+    (SELECT 
+            COUNT(*) AS total_films
+        FROM
+            film f
+        WHERE
+            f.rating != 'R') AS films_not_r;
+            
+-- Escalar — Proporción de R sobre el total (4 decimales)
+
+SELECT 
+    ROUND((SELECT 
+                    COUNT(*)
+                FROM
+                    film
+                WHERE
+                    rating = 'R') / (SELECT 
+                    COUNT(*)
+                FROM
+                    film),
+            4) AS ratio_r;
+            
+-- Correlacionada (EXISTS) — ¿Algún idioma distinto de English con películas?
+
+SELECT 
+    l.language_id, l.name
+FROM
+    language l
+WHERE
+    l.name != 'English'
+        AND EXISTS( SELECT 
+            1
+        FROM
+            film f
+        WHERE
+            f.language_id = l.language_id);
+            
+-- Escalar — ¿Cuántos idiomas hay en language?
+
+
+SELECT 
+    (SELECT 
+            COUNT(*)
+        FROM
+            language) AS langs_in_language;
+            
+-- Correlacionada (EXISTS) — Idiomas con al menos una película
+
+SELECT 
+    l.name
+FROM
+    language l
+WHERE
+    EXISTS( SELECT 
+            1
+        FROM
+            film f
+        WHERE
+            l.language_id = f.language_id);
+            
+
+-- Derivada — Idiomas con MAX(replacement_cost) = 29.99
+
+SELECT 
+    l.name
+FROM
+    (SELECT 
+        f.language_id, MAX(f.replacement_cost) AS mx
+    FROM
+        film f
+    GROUP BY f.language_id) AS r
+        JOIN
+    language l USING (language_id)
+WHERE
+    r.mx = 29.99;
+    
+-- Derivada — Idiomas con MIN(replacement_cost) = 9.99
+
+SELECT 
+    l.name
+FROM
+    (SELECT 
+        f.language_id, MIN(replacement_cost) AS min
+    FROM
+        film f
+    GROUP BY f.language_id) AS r
+        JOIN
+    language l using (language_id)
+WHERE
+    r.min = 9.99;
+
+-- Correlacionada (EXISTS) — Idiomas con películas no ’R’
+
+SELECT 
+    l.name
+FROM
+    language l
+WHERE
+    EXISTS( SELECT 
+            1
+        FROM
+            film f
+        WHERE
+            l.language_id = f.language_id
+                AND f.rating != 'R');
+                
+-- Derivada — ¿Cuántas películas totales hay? 
+
+SELECT 
+    t.total_films
+FROM
+    (SELECT 
+        COUNT(*) AS total_films
+    FROM
+        film) AS t;
+
+-- Escalar — Media global de length (redondeada a 4 decimales)
+
+SELECT 
+    ROUND((SELECT 
+                    AVG(f.length)
+                FROM
+                    film f),
+            4) AS avg_len;
+
+
+
             
 
 
