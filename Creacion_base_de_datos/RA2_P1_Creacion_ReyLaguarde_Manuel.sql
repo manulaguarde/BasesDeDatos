@@ -102,9 +102,9 @@ CREATE VIEW v_resumen_facultades AS
         f.codigo AS codigo_facultad,
         COUNT(p.id_profesor) AS num_profesores,
         SUM(p.salario) AS masa_salarial,
-        AVG(p.salario) AS salario_medio
+        ROUND(AVG(p.salario),2) AS salario_medio
     FROM
         facultades f
-            JOIN
+            LEFT JOIN
         profesores p USING (id_facultad)
-    GROUP BY f.id_facultad;
+    GROUP BY f.id_facultad, f.nombre, f.codigo;
