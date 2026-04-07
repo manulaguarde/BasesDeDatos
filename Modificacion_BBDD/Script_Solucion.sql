@@ -1,3 +1,4 @@
+drop database gha_analytics;
 -- Una vez cargada la base de datos, veo el panorama en cada tabla
 
 use gha_analytics;
@@ -69,9 +70,9 @@ WHERE
 
 -- intento hacer la union de las tablas pero falla porque hay pacientes inexistentes en la tabla visitas
 
-alter table visitas
-add constraint fk_visitas_pacientes foreign key (paciente_id) references pacientes(id)
-on update cascade on delete restrict;
+-- alter table visitas
+-- add constraint fk_visitas_pacientes foreign key (paciente_id) references pacientes(id)
+-- on update cascade on delete restrict;
 
 
 -- Voy a limpiar los nif y nombres de la base de datos, que los nif sean 8 números y una letra en mayuscula
@@ -191,7 +192,6 @@ SET
 -- UPDATE medicos 
 -- SET num_colegiado = REGEXP_REPLACE(num_colegiado, '[^0-9]', '');
 
-rollback;
 start transaction;
 
 -- Queremos que todos tengan 6 dígitos (2 de provincia + 4 de número) y comiencen por COL-.
@@ -263,7 +263,6 @@ on update cascade on delete restrict;
 
 -- ============4. Normalización y División de Tablas==============
 
-drop table seguros_pacientes;
 
 -- creo la tabla de los seguros de los pacientes 
 CREATE TABLE `seguros_pacientes` (
@@ -380,7 +379,7 @@ UPDATE visitas
 SET 
     importe = importe_sucio;
 
-rollback;
+
 explain visitas;
 
 
@@ -441,6 +440,39 @@ SELECT
 FROM raw_import_visitas riv 
 JOIN pacientes p ON p.nif = TRIM(SUBSTRING_INDEX(riv.raw_data, '|', 1)); -- Busca que coincida el ID del paciente que acabamos de importar/actualizar
 
+-- vuelvo a sanear importes de la tabla visitas
+
+UPDATE visitas 
+SET 
+    importe_sucio = TRIM(importe_sucio);
+    UPDATE visitas 
+SET 
+    importe_sucio = REPLACE(importe_sucio, '€', '');
+    
+UPDATE visitas 
+SET 
+    importe_sucio = REPLACE(importe_sucio, 'EUR', '');
+    
+UPDATE visitas 
+SET 
+    importe_sucio = REPLACE(importe_sucio, 'Gratis', '0.00');
+    
+UPDATE visitas 
+SET 
+    importe_sucio = REPLACE(importe_sucio, 'GRATIS', '0.00');
+    
+UPDATE visitas 
+SET 
+    importe_sucio = REPLACE(importe_sucio, ',', '.');
+    
+UPDATE visitas 
+SET 
+    importe_sucio = REPLACE(importe_sucio, '$', '');
+    
+UPDATE visitas 
+SET 
+    importe = importe_sucio;
+
 -- ahora con todos los importes saneados modifico la columna a decimal y agrego un constraint para que no pueda haber importes negativos
 alter table visitas modify column importe decimal(10,2) not null,
 add constraint chk_importe check (importe >=0);
@@ -484,7 +516,7 @@ SET
     email = 'email-incorrecto'
 WHERE
     email NOT LIKE '%@%.%';
-rollback;
+
 select * from pacientes;
 
 explain pacientes;
@@ -594,7 +626,7 @@ WHERE
         OR fecha_visita LIKE '%/%/____'
         OR fecha_visita LIKE '____-%-%';
 
-rollback;
+
 commit;
 
 -- Se ha optado por el tipo DATETIME para garantizar la integridad estructural y permitir el uso de funciones cronológicas. 
@@ -663,7 +695,7 @@ CREATE TABLE `visitas_huerfanas` (
   CONSTRAINT `chk_importe_huerfanos` CHECK ((`importe` >= 0))
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-drop table visitas_huerfanas;
+
 
 INSERT INTO visitas_huerfanas
 SELECT v.* FROM visitas v
@@ -707,4 +739,6 @@ on delete restrict on update cascade;
 set sql_safe_updates=1;
 
 -- elimino la tabla raw_import_visitas, ya no tiene ninguna utilidad y solo genera "ruido" en la base de datos
-drop table raw_import_visitas;
+-- drop table raw_import_visitas;
+
+-- averiguar insert into duplicate key
