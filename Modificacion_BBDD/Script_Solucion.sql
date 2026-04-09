@@ -1,4 +1,3 @@
-drop database gha_analytics;
 -- Una vez cargada la base de datos, veo el panorama en cada tabla
 
 use gha_analytics;
@@ -739,6 +738,6 @@ on delete restrict on update cascade;
 set sql_safe_updates=1;
 
 -- elimino la tabla raw_import_visitas, ya no tiene ninguna utilidad y solo genera "ruido" en la base de datos
--- drop table raw_import_visitas;
+drop table raw_import_visitas;
 
 -- averiguar insert into duplicate key
