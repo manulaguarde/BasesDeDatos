@@ -65,7 +65,7 @@ SELECT * FROM empleados WHERE nif_nie IS NULL;
 set sql_safe_updates=0;
 DELETE FROM empleados WHERE nif_nie IS NULL;
 
--- 3. Ahora ya puedes blindar la tabla
+-- 3. Ahora ya podemos  blindar la tabla
 ALTER TABLE empleados MODIFY COLUMN nif_nie VARCHAR(50) NOT NULL;
 ALTER TABLE empleados ADD CONSTRAINT uq_nif UNIQUE (nif_nie);
 
@@ -778,22 +778,22 @@ select * from vehiculos;
 -- Añadimos latitud y longitud como tipos DECIMAL para mantener la precisión geográfica.
 
 ALTER TABLE vehiculos 
-ADD COLUMN latitud DECIMAL(10, 8),
-ADD COLUMN longitud DECIMAL(11, 8);
+ADD COLUMN latitud_gps DECIMAL(10, 8),
+ADD COLUMN longitud_gps DECIMAL(11, 8);
 
 UPDATE vehiculos 
-SET gps = TRIM(REPLACE(gps, ' ', '')) 
+SET coordenadas_gps = TRIM(REPLACE(coordenadas_gps, ' ', '')) 
 WHERE gps IS NOT NULL;
 
 UPDATE vehiculos 
-SET latitud = CAST(SUBSTRING_INDEX(gps, ',', 1) AS DECIMAL(10,8)),
-    longitud = CAST(SUBSTRING_INDEX(gps, ',', -1) AS DECIMAL(11,8))
-WHERE gps IS NOT NULL AND gps LIKE '%,%';
+SET latitud = CAST(SUBSTRING_INDEX(coordenadas_gps, ',', 1) AS DECIMAL(10,8)),
+    longitud = CAST(SUBSTRING_INDEX(coordenadas_gps, ',', -1) AS DECIMAL(11,8))
+WHERE coordenadas_gps IS NOT NULL AND coordenadas_gps LIKE '%,%';
 
 -- Ver cuántos registros están "rotos"
-SELECT id, gps FROM vehiculos 
-WHERE gps NOT LIKE '%,%' 
-   OR gps REGEXP '[a-zA-Z]';
+SELECT id, coordenadas_gps FROM vehiculos 
+WHERE coordenadas_gps NOT LIKE '%,%' 
+   OR coordenadas_gps REGEXP '[a-zA-Z]';
    
 -- --------------------------------------------------------------------------------------------
 -- AÑO_FABRICACION
@@ -832,6 +832,7 @@ rollback;
 -- MATRICULA
 
 start transaction;
+set sql_safe_updates=0;
 UPDATE vehiculos 
 SET matricula = UPPER(TRIM(REPLACE(REPLACE(matricula, ' ', ''), '-', '')))
 WHERE matricula IS NOT NULL;
@@ -849,6 +850,9 @@ CREATE TABLE vehiculos_errores LIKE vehiculos;
 
 INSERT INTO vehiculos_errores 
 SELECT * FROM vehiculos 
+WHERE matricula NOT REGEXP '^[0-9]{4}-[A-Z]{3}$' OR matricula IS NULL;
+
+delete from vehiculos
 WHERE matricula NOT REGEXP '^[0-9]{4}-[A-Z]{3}$' OR matricula IS NULL;
 
 -- una opcion para los null
@@ -877,4 +881,24 @@ DELETE FROM vehiculos
 WHERE matricula = '5208-DEF' 
 ORDER BY id DESC LIMIT 1;
 
+rollback;
 
+
+-- ====================================================TABLA MANTENIMIENTO_FLOTA==============================================================
+
+select * from mantenimientos_flota;
+
+alter table mantenimientos_flota
+add constraint fk_mantenimiento_vehiculos foreign key (vehiculo_id)
+references vehiculos(id);
+
+
+
+SELECT mf.id as id_mantenimiento,mf.vehiculo_id, v1.id,v1.matricula, v2.id, v2.matricula
+FROM 
+	mantenimientos_flota mf 
+		JOIN 
+	vehiculos v1 ON mf.vehiculo_id = v1.id 
+		JOIN 
+	vehiculos v2 ON v1.matricula = v2.matricula
+WHERE v2.id < v1.id;
