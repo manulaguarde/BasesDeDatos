@@ -740,4 +740,4 @@ set sql_safe_updates=1;
 -- elimino la tabla raw_import_visitas, ya no tiene ninguna utilidad y solo genera "ruido" en la base de datos
 drop table raw_import_visitas;
 
--- averiguar insert into duplicate key
+
