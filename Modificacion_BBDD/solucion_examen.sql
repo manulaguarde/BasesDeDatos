@@ -783,7 +783,7 @@ ADD COLUMN longitud_gps DECIMAL(11, 8);
 
 UPDATE vehiculos 
 SET coordenadas_gps = TRIM(REPLACE(coordenadas_gps, ' ', '')) 
-WHERE gps IS NOT NULL;
+WHERE coordenadas_gps IS NOT NULL;
 
 UPDATE vehiculos 
 SET latitud = CAST(SUBSTRING_INDEX(coordenadas_gps, ',', 1) AS DECIMAL(10,8)),
@@ -883,7 +883,7 @@ ORDER BY id DESC LIMIT 1;
 
 rollback;
 
-
+select * from vehiculos_errores;
 -- ====================================================TABLA MANTENIMIENTO_FLOTA==============================================================
 
 select * from mantenimientos_flota;
@@ -902,3 +902,29 @@ FROM
 		JOIN 
 	vehiculos v2 ON v1.matricula = v2.matricula
 WHERE v2.id < v1.id;
+
+-- --------------------------------------------------------------------------------------------------------------
+-- para las fechas con años:
+UPDATE envios 
+SET fecha_final = CASE 
+    -- Si la ÚLTIMA parte es menor a 24 (ej: 19), asumimos que el año está al PRINCIPIO
+    WHEN CAST(SUBSTRING_INDEX(fecha_texto, '/', -1) AS UNSIGNED) < 24 
+        THEN STR_TO_DATE(fecha_texto, '%y/%m/%d') 
+    
+    -- Si la ÚLTIMA parte es 24 o mayor, asumimos que es el año (DD/MM/YY)
+    ELSE STR_TO_DATE(fecha_texto, '%d/%m/%y')
+END
+WHERE fecha_texto LIKE '%/%/%';
+
+UPDATE vehiculos
+SET matricula = CASE 
+    WHEN matricula IS NULL THEN 'SIN-MATRICULA'
+    WHEN matricula REGEXP '^[0-9]{4}[A-Z]{3}$' THEN CONCAT(LEFT(matricula, 4), '-', RIGHT(matricula, 3)) -- Falta el guion
+    ELSE 'FORMATO-INVALIDO'
+END
+WHERE matricula NOT REGEXP '^[0-9]{4}-[A-Z]{3}$' OR matricula IS NULL;
+
+UPDATE vehiculos 
+SET matricula = '0000-XXX' 
+WHERE matricula NOT REGEXP '^[0-9]{4}-[A-Z]{3}$' 
+   OR matricula IS NULL;
