@@ -10,6 +10,5 @@ create table clientes(
 
 insert into clientes values ("124a","Maria",35);
 
-update clientes set nombre= "pedro",edad=26 where id="123a";
 
 select * from clientes;
