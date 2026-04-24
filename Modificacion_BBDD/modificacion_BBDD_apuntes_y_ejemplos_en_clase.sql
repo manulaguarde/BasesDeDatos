@@ -293,3 +293,5 @@ select * from historico_clientes;
 -- primeramente start transaction
 -- savepoint nombre_savepoint
 -- rollback to nombre_savepoint
+
+-- averiguar insert into duplicate key
