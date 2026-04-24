@@ -38,12 +38,14 @@ delimiter ;
 -- más de 20 películas.
 
 delimiter //
-create trigger no_borrar_actores_relevantes before delete on actor
+create trigger no_borrar_actores_famosos before delete on actor
 for each row
 begin 
 	declare v_contador int;
-	select actor_id, count(film_id) into v_contador 
-	if v
+	select count(film_id) into v_contador from film_actor
+    where actor_id = old.actor_id group by actor_id;
+	if v_contador > 20 then
+		signal sqlstate '45000' set message_text = 'Actor demasiado famoso para borrar';
     end if;
 end //
 delimiter ;
